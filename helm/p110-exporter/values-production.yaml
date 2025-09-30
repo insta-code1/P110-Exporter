@@ -84,10 +84,6 @@ affinity:
 
 # P110 Exporter specific configuration
 config:
-  # IMPORTANT: Set your TAPO account credentials
-  tapoEmail: "your-email@example.com"
-  tapoPassword: "your-password"
-  
   port: 9333
   maxRetryCount: 3
   
@@ -102,6 +98,15 @@ config:
       living_room: "192.168.1.183"
       bedroom: "192.168.1.184"
       kitchen: "192.168.1.185"
+
+# REQUIRED: Reference to existing secret containing TAPO credentials
+# Create the secret before installing the chart:
+#   kubectl create secret generic p110-exporter-secret \
+#     --from-literal=tapo-email='your-email@example.com' \
+#     --from-literal=tapo-password='your-password'
+existingSecret: "p110-exporter-secret"
+existingSecretEmailKey: "tapo-email"
+existingSecretPasswordKey: "tapo-password"
 
 # If you have Prometheus Operator installed, enable ServiceMonitor
 serviceMonitor:

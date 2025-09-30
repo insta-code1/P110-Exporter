@@ -10,6 +10,11 @@ helm version
 
 # Verify kubectl is configured
 kubectl cluster-info
+
+# Create secret for TAPO credentials (REQUIRED before installation)
+kubectl create secret generic p110-exporter-secret \
+  --from-literal=tapo-email='your-email@example.com' \
+  --from-literal=tapo-password='your-password'
 ```
 
 ## Installation
@@ -19,8 +24,7 @@ kubectl cluster-info
 ```bash
 # Install with minimal configuration
 helm install p110-exporter ./helm/p110-exporter \
-  --set config.tapoEmail="your-email@example.com" \
-  --set config.tapoPassword="your-password" \
+  --set existingSecret="p110-exporter-secret" \
   --set config.devicesEnv="study=192.168.1.102,living_room=192.168.1.183"
 ```
 
@@ -29,9 +33,9 @@ helm install p110-exporter ./helm/p110-exporter \
 ```bash
 # Create your custom values file
 cat > my-values.yaml <<EOF
+existingSecret: "p110-exporter-secret"
+
 config:
-  tapoEmail: "your-email@example.com"
-  tapoPassword: "your-password"
   devicesConfig: |
     devices:
       study: "192.168.1.102"
@@ -52,11 +56,17 @@ helm install p110-exporter ./helm/p110-exporter -f my-values.yaml
 ### Install in specific namespace
 
 ```bash
+# Create namespace and secret
 kubectl create namespace monitoring
+kubectl create secret generic p110-exporter-secret \
+  -n monitoring \
+  --from-literal=tapo-email='your-email@example.com' \
+  --from-literal=tapo-password='your-password'
+
+# Install chart
 helm install p110-exporter ./helm/p110-exporter \
   -n monitoring \
-  --set config.tapoEmail="your-email@example.com" \
-  --set config.tapoPassword="your-password" \
+  --set existingSecret="p110-exporter-secret" \
   --set config.devicesEnv="study=192.168.1.102"
 ```
 
@@ -71,19 +81,24 @@ helm lint ./helm/p110-exporter
 ### Dry-run installation
 
 ```bash
+# Create a test secret first
+kubectl create secret generic test-secret \
+  --from-literal=tapo-email='test@example.com' \
+  --from-literal=tapo-password='testpass' \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+# Dry-run the installation
 helm install p110-exporter ./helm/p110-exporter \
   --dry-run \
   --debug \
-  --set config.tapoEmail="test@example.com" \
-  --set config.tapoPassword="testpass"
+  --set existingSecret="test-secret"
 ```
 
 ### Generate templates without installation
 
 ```bash
 helm template my-release ./helm/p110-exporter \
-  --set config.tapoEmail="test@example.com" \
-  --set config.tapoPassword="testpass" \
+  --set existingSecret="test-secret" \
   > generated-manifests.yaml
 ```
 
@@ -205,9 +220,14 @@ helm get manifest p110-exporter
 ### Enable Prometheus ServiceMonitor
 
 ```bash
+# Create secret first
+kubectl create secret generic p110-exporter-secret \
+  --from-literal=tapo-email='your-email@example.com' \
+  --from-literal=tapo-password='your-password'
+
+# Install with ServiceMonitor
 helm install p110-exporter ./helm/p110-exporter \
-  --set config.tapoEmail="your-email@example.com" \
-  --set config.tapoPassword="your-password" \
+  --set existingSecret="p110-exporter-secret" \
   --set config.devicesEnv="study=192.168.1.102" \
   --set serviceMonitor.enabled=true \
   --set serviceMonitor.additionalLabels.release=prometheus
@@ -216,9 +236,14 @@ helm install p110-exporter ./helm/p110-exporter \
 ### Enable Ingress
 
 ```bash
+# Create secret first
+kubectl create secret generic p110-exporter-secret \
+  --from-literal=tapo-email='your-email@example.com' \
+  --from-literal=tapo-password='your-password'
+
+# Install with Ingress
 helm install p110-exporter ./helm/p110-exporter \
-  --set config.tapoEmail="your-email@example.com" \
-  --set config.tapoPassword="your-password" \
+  --set existingSecret="p110-exporter-secret" \
   --set config.devicesEnv="study=192.168.1.102" \
   --set ingress.enabled=true \
   --set ingress.hosts[0].host=p110.example.com \
@@ -229,9 +254,14 @@ helm install p110-exporter ./helm/p110-exporter \
 ### Set resource limits
 
 ```bash
+# Create secret first
+kubectl create secret generic p110-exporter-secret \
+  --from-literal=tapo-email='your-email@example.com' \
+  --from-literal=tapo-password='your-password'
+
+# Install with resource limits
 helm install p110-exporter ./helm/p110-exporter \
-  --set config.tapoEmail="your-email@example.com" \
-  --set config.tapoPassword="your-password" \
+  --set existingSecret="p110-exporter-secret" \
   --set config.devicesEnv="study=192.168.1.102" \
   --set resources.limits.cpu=200m \
   --set resources.limits.memory=256Mi \
@@ -239,15 +269,15 @@ helm install p110-exporter ./helm/p110-exporter \
   --set resources.requests.memory=128Mi
 ```
 
-### Use existing secret for credentials
+### Use existing secret with custom keys
 
 ```bash
-# Create secret first
+# Create secret with custom key names
 kubectl create secret generic my-tapo-creds \
   --from-literal=email='your-email@example.com' \
   --from-literal=password='your-password'
 
-# Install with existing secret
+# Install referencing the custom secret
 helm install p110-exporter ./helm/p110-exporter \
   --set config.devicesEnv="study=192.168.1.102" \
   --set existingSecret=my-tapo-creds \
@@ -258,9 +288,14 @@ helm install p110-exporter ./helm/p110-exporter \
 ### Set node affinity
 
 ```bash
+# Create secret first
+kubectl create secret generic p110-exporter-secret \
+  --from-literal=tapo-email='your-email@example.com' \
+  --from-literal=tapo-password='your-password'
+
+# Install with node selector
 helm install p110-exporter ./helm/p110-exporter \
-  --set config.tapoEmail="your-email@example.com" \
-  --set config.tapoPassword="your-password" \
+  --set existingSecret="p110-exporter-secret" \
   --set config.devicesEnv="study=192.168.1.102" \
   --set nodeSelector."kubernetes\.io/hostname"=node-1
 ```

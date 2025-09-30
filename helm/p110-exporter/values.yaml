@@ -107,11 +107,6 @@ affinity: {}
 
 # P110 Exporter specific configuration
 config:
-  # TAPO account credentials
-  # These should be set via secrets in production
-  tapoEmail: ""
-  tapoPassword: ""
-  
   # Prometheus port
   port: 9333
   
@@ -137,7 +132,12 @@ config:
       living_room: "192.168.1.183"
 
 # Secret configuration
-# If you want to use an existing secret for TAPO credentials
+# REQUIRED: Name of existing secret containing TAPO credentials
+# The secret must be created manually before installing the chart
+# Example:
+#   kubectl create secret generic p110-exporter-secret \
+#     --from-literal=tapo-email='your-email@example.com' \
+#     --from-literal=tapo-password='your-password'
 existingSecret: ""
 # Keys in the existing secret for TAPO_EMAIL and TAPO_PASSWORD
 existingSecretEmailKey: "tapo-email"

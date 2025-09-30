@@ -65,9 +65,5 @@ Create the name of the service account to use
 Get the secret name for TAPO credentials
 */}}
 {{- define "p110-exporter.secretName" -}}
-{{- if .Values.existingSecret }}
 {{- .Values.existingSecret }}
-{{- else }}
-{{- include "p110-exporter.fullname" . }}
-{{- end }}
 {{- end }}

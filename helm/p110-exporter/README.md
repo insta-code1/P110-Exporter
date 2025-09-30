@@ -8,8 +8,34 @@ This Helm chart deploys the [P110-Exporter](https://github.com/insta-code1/P110-
 - Helm 3.0+
 - Tapo P110 smart plug devices with known IP addresses
 - Tapo account credentials (email and password)
+- A Kubernetes secret containing TAPO credentials (must be created before installation)
 
 ## Installation
+
+### Create Secret for TAPO Credentials
+
+Before installing the chart, you must create a Kubernetes secret containing your TAPO account credentials:
+
+```bash
+kubectl create secret generic p110-exporter-secret \
+  --from-literal=tapo-email='your-email@example.com' \
+  --from-literal=tapo-password='your-password'
+```
+
+Alternatively, you can create a secret from a file:
+
+```bash
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: p110-exporter-secret
+type: Opaque
+stringData:
+  tapo-email: "your-email@example.com"
+  tapo-password: "your-password"
+EOF
+```
 
 ### Add the chart repository (if published)
 
@@ -22,7 +48,8 @@ helm repo update
 
 ```bash
 # From the repository root
-helm install my-p110-exporter ./helm/p110-exporter
+helm install my-p110-exporter ./helm/p110-exporter \
+  --set existingSecret=p110-exporter-secret
 ```
 
 ### Install with custom values
@@ -30,9 +57,9 @@ helm install my-p110-exporter ./helm/p110-exporter
 1. Create a `custom-values.yaml` file:
 
 ```yaml
+existingSecret: "p110-exporter-secret"
+
 config:
-  tapoEmail: "your-email@example.com"
-  tapoPassword: "your-password"
   devicesConfig: |
     devices:
       study: "192.168.1.102"
@@ -58,28 +85,10 @@ helm install my-p110-exporter ./helm/p110-exporter -f custom-values.yaml
 Instead of using a ConfigMap, you can specify devices via environment variable:
 
 ```yaml
+existingSecret: "p110-exporter-secret"
+
 config:
-  tapoEmail: "your-email@example.com"
-  tapoPassword: "your-password"
   devicesEnv: "study=192.168.1.102,living_room=192.168.1.183"
-```
-
-### Using an existing secret for credentials
-
-If you have an existing Kubernetes secret with your Tapo credentials:
-
-```bash
-kubectl create secret generic my-tapo-secret \
-  --from-literal=tapo-email='your-email@example.com' \
-  --from-literal=tapo-password='your-password'
-```
-
-Then reference it in your values:
-
-```yaml
-existingSecret: "my-tapo-secret"
-existingSecretEmailKey: "tapo-email"
-existingSecretPasswordKey: "tapo-password"
 ```
 
 ## Configuration
@@ -116,13 +125,11 @@ The following table lists the configurable parameters of the P110-Exporter chart
 | `nodeSelector` | Node selector | `{}` |
 | `tolerations` | Tolerations | `[]` |
 | `affinity` | Affinity rules | `{}` |
-| `config.tapoEmail` | Tapo account email | `""` |
-| `config.tapoPassword` | Tapo account password | `""` |
 | `config.port` | Prometheus port | `9333` |
 | `config.maxRetryCount` | Max retry count for device connection | `3` |
 | `config.devicesEnv` | Devices as environment variable | `""` |
 | `config.devicesConfig` | Devices configuration (YAML format) | See values.yaml |
-| `existingSecret` | Existing secret name for credentials | `""` |
+| `existingSecret` | **REQUIRED**: Existing secret name for credentials | `""` |
 | `existingSecretEmailKey` | Key in existing secret for email | `tapo-email` |
 | `existingSecretPasswordKey` | Key in existing secret for password | `tapo-password` |
 | `serviceMonitor.enabled` | Enable ServiceMonitor for Prometheus Operator | `false` |
@@ -194,22 +201,41 @@ helm uninstall my-p110-exporter
 
 ### Minimal installation with inline configuration
 
+First, create the secret:
+
+```bash
+kubectl create secret generic p110-exporter-secret \
+  --from-literal=tapo-email='your-email@example.com' \
+  --from-literal=tapo-password='your-password'
+```
+
+Then install the chart:
+
 ```bash
 helm install p110-exporter ./helm/p110-exporter \
-  --set config.tapoEmail="your-email@example.com" \
-  --set config.tapoPassword="your-password" \
+  --set existingSecret="p110-exporter-secret" \
   --set config.devicesEnv="study=192.168.1.102,living_room=192.168.1.183"
 ```
 
 ### Production installation with resources and monitoring
 
+First, create the secret:
+
+```bash
+kubectl create secret generic p110-exporter-secret \
+  --from-literal=tapo-email='your-email@example.com' \
+  --from-literal=tapo-password='your-password'
+```
+
+Create a production-values.yaml:
+
 ```yaml
 # production-values.yaml
 replicaCount: 1
 
+existingSecret: "p110-exporter-secret"
+
 config:
-  tapoEmail: "your-email@example.com"
-  tapoPassword: "your-password"
   port: 9333
   maxRetryCount: 3
   devicesConfig: |
