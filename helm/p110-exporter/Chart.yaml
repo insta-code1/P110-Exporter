@@ -1,0 +1,17 @@
+apiVersion: v2
+name: p110-exporter
+description: A Helm chart for deploying P110-Exporter - Tapo P110 Prometheus Exporter
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+  - prometheus
+  - exporter
+  - tapo
+  - p110
+  - monitoring
+home: https://github.com/insta-code1/P110-Exporter
+sources:
+  - https://github.com/insta-code1/P110-Exporter
+maintainers:
+  - name: P110-Exporter Contributors

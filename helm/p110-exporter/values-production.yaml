@@ -1,0 +1,117 @@
+# Example values for production deployment of p110-exporter
+# This file provides a template for a production-ready deployment
+
+replicaCount: 1
+
+image:
+  repository: povilasid/p110-exporter
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+serviceAccount:
+  create: true
+  annotations: {}
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9333"
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  allowPrivilegeEscalation: false
+
+service:
+  type: ClusterIP
+  port: 9333
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "9333"
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+nodeSelector:
+  kubernetes.io/os: linux
+
+tolerations: []
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - p110-exporter
+        topologyKey: kubernetes.io/hostname
+
+# P110 Exporter specific configuration
+config:
+  port: 9333
+  maxRetryCount: 3
+  
+  # Option 1: Use environment variable for devices (simpler)
+  # Format: room_name=ip_address,room2=ip_address2
+  devicesEnv: ""
+  
+  # Option 2: Use YAML configuration (more readable for multiple devices)
+  devicesConfig: |
+    devices:
+      study: "192.168.1.102"
+      living_room: "192.168.1.183"
+      bedroom: "192.168.1.184"
+      kitchen: "192.168.1.185"
+
+# REQUIRED: Reference to existing secret containing TAPO credentials
+# Create the secret before installing the chart:
+#   kubectl create secret generic p110-exporter-secret \
+#     --from-literal=tapo-email='your-email@example.com' \
+#     --from-literal=tapo-password='your-password'
+existingSecret: "p110-exporter-secret"
+existingSecretEmailKey: "tapo-email"
+existingSecretPasswordKey: "tapo-password"
+
+# If you have Prometheus Operator installed, enable ServiceMonitor
+serviceMonitor:
+  enabled: true
+  additionalLabels:
+    release: prometheus  # Match your Prometheus Operator release label
+  interval: 30s
+  scrapeTimeout: 10s
