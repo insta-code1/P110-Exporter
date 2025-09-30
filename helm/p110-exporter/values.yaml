@@ -1,0 +1,172 @@
+# Default values for p110-exporter.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: povilasid/p110-exporter
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  # fsGroup: 2000
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  allowPrivilegeEscalation: false
+
+service:
+  type: ClusterIP
+  port: 9333
+  targetPort: 9333
+  annotations: {}
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: p110-exporter.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: p110-exporter-tls
+  #    hosts:
+  #      - p110-exporter.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# P110 Exporter specific configuration
+config:
+  # TAPO account credentials
+  # These should be set via secrets in production
+  tapoEmail: ""
+  tapoPassword: ""
+  
+  # Prometheus port
+  port: 9333
+  
+  # Max retry count for device connection
+  # Set to 0 to retry indefinitely
+  maxRetryCount: 3
+  
+  # Devices configuration
+  # Can be provided as environment variable or as a ConfigMap
+  # Format: room_name=ip_address,room2=ip_address2
+  # Example: study=192.168.0.1,living_room=192.168.0.2
+  devicesEnv: ""
+  
+  # Devices configuration file (tapo.yaml)
+  # If devicesEnv is not set, this configuration will be used
+  # Format:
+  # devices:
+  #   study: "192.168.1.102"
+  #   living_room: "192.168.1.183"
+  devicesConfig: |
+    devices:
+      study: "192.168.1.102"
+      living_room: "192.168.1.183"
+
+# Secret configuration
+# If you want to use an existing secret for TAPO credentials
+existingSecret: ""
+# Keys in the existing secret for TAPO_EMAIL and TAPO_PASSWORD
+existingSecretEmailKey: "tapo-email"
+existingSecretPasswordKey: "tapo-password"
+
+# ServiceMonitor for Prometheus Operator
+serviceMonitor:
+  enabled: false
+  # Additional labels for ServiceMonitor
+  additionalLabels: {}
+  # Scrape interval
+  interval: 30s
+  # Scrape timeout
+  scrapeTimeout: 10s
+  # Metric relabel configs
+  metricRelabelings: []
+  # Relabel configs
+  relabelings: []
+
+# PodMonitor for Prometheus Operator (alternative to ServiceMonitor)
+podMonitor:
+  enabled: false
+  # Additional labels for PodMonitor
+  additionalLabels: {}
+  # Scrape interval
+  interval: 30s
+  # Scrape timeout
+  scrapeTimeout: 10s
+  # Metric relabel configs
+  metricRelabelings: []
+  # Relabel configs
+  relabelings: []

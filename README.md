@@ -4,7 +4,24 @@ Exports energy consumption data from [Tapo P110](https://amzn.to/3FsCgjn) smart 
 
 ![Example Grafana Dashboard](https://i.imgur.com/DxLQgKr.png)
 
-## Startup using docker
+## Deployment Options
+
+### Kubernetes with Helm
+
+Deploy to Kubernetes using the provided Helm chart. See the [Helm Chart README](helm/p110-exporter/README.md) for detailed instructions.
+
+**Quick Start:**
+
+```bash
+helm install my-p110-exporter ./helm/p110-exporter \
+  --set config.tapoEmail="your-email@example.com" \
+  --set config.tapoPassword="your-password" \
+  --set config.devicesEnv="study=192.168.1.102,living_room=192.168.1.183"
+```
+
+For production deployments, see the [example values file](helm/p110-exporter/values-production.yaml).
+
+### Startup using docker
 
 Create a [docker-compose.yml](docker-compose.yml)
 
